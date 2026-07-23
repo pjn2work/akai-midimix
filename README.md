@@ -30,6 +30,10 @@ python midimix_debugger.py
 
 The layout tab uses the **factory default** CC/note map. If you customized the unit with Akai’s editor, rely on the raw log for the numbers you actually receive.
 
+![MIDIMIX layout](img/layout.png)
+
+![Raw MIDI log](img/logs.png)
+
 ## LED test
 
 On the **LED test** tab:
@@ -43,3 +47,5 @@ When you **Connect** on the main toolbar, the app opens the matching MIDI **outp
 To load current knob/fader positions into the app, press **SEND ALL** on the MIDIMIX (the hardware does not expose a reliable software equivalent).
 
 LEDs are driven with **Note On** (velocity 127 = on, 0 = off) on the factory default note numbers. The Solo key often has no LED; bank arrows use a paired binary indicator on the hardware.
+
+![LED test](img/leds.png)
