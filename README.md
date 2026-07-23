@@ -2,6 +2,9 @@
 
 Small Python GUI to visualize **Akai MIDIMIX** knobs, faders, and buttons and see the exact MIDI values they send.
 
+<img src="img/akai_midimix.png" width="300" alt="Akai MIDIMIX" style="box-shadow: 8px 8px 16px rgba(30,0,20,0.4); border-radius: 10px;"/>
+
+
 ## Project layout
 
 | File | Role |
