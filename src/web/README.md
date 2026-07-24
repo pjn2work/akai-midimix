@@ -49,6 +49,7 @@ CC/note layout matches `src/python/midimix_factory.py` (see `js/midi-map.js`).
 
 | File | Role |
 |------|------|
+| `js/constants.js` | **Tunable min/max** — amplitude, frequency, phase, time, center freq, plot |
 | `js/midi-map.js` | Factory CC/note constants |
 | `js/color.js` | Knob → RGB (no green, no red wrap) |
 | `js/wave-engine.js` | State, math, mute/solo |

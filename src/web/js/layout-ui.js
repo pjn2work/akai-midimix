@@ -1,3 +1,4 @@
+import { MIDI_CC, TIME_STEP } from "./constants.js";
 import {
   GLOBAL_BUTTONS,
   KNOB_ROWS,
@@ -9,8 +10,8 @@ import {
   faderCc,
   muteNote,
   soloNote,
+  recArmNote,
 } from "./midi-map.js";
-import { TIME_STEP_MIN, TIME_STEP_MAX } from "./wave-engine.js";
 
 export class LayoutUI {
   /**
@@ -67,14 +68,14 @@ export class LayoutUI {
     const globals = document.createElement("div");
     globals.className = "global-buttons";
     const bankLeft = this._createMomentaryButton(GLOBAL_BUTTONS.bankLeft.label, GLOBAL_BUTTONS.bankLeft.note, () => {
-      this.engine.adjustTimeStep(-0.025);
+      this.engine.adjustTimeStep(-TIME_STEP.delta);
       this.handlers.onTimeStepChange?.(this.engine.timeStep);
     });
     const bankRight = this._createMomentaryButton(
       GLOBAL_BUTTONS.bankRight.label,
       GLOBAL_BUTTONS.bankRight.note,
       () => {
-        this.engine.adjustTimeStep(0.025);
+        this.engine.adjustTimeStep(TIME_STEP.delta);
         this.handlers.onTimeStepChange?.(this.engine.timeStep);
       },
     );
@@ -101,9 +102,9 @@ export class LayoutUI {
     timeStepRow.innerHTML = `<span class="row-label">Time step Δt</span>`;
     this.timeStepSlider = document.createElement("input");
     this.timeStepSlider.type = "range";
-    this.timeStepSlider.min = String(TIME_STEP_MIN);
-    this.timeStepSlider.max = String(TIME_STEP_MAX);
-    this.timeStepSlider.step = "0.025";
+    this.timeStepSlider.min = String(TIME_STEP.min);
+    this.timeStepSlider.max = String(TIME_STEP.max);
+    this.timeStepSlider.step = String(TIME_STEP.sliderStep);
     this.timeStepSlider.className = "timestep-slider";
     this.timeStepSlider.addEventListener("input", () => {
       const value = parseFloat(this.timeStepSlider.value);
@@ -117,6 +118,13 @@ export class LayoutUI {
 
     const muteFrame = this._createButtonRow(BUTTON_ROWS.mute.label, BUTTON_ROWS.mute.notes, "mute");
     this.root.appendChild(muteFrame);
+
+    const recArmFrame = this._createButtonRow(
+      `${BUTTON_ROWS.recArm.label} (solo)`,
+      BUTTON_ROWS.recArm.notes,
+      "recArm",
+    );
+    this.root.appendChild(recArmFrame);
 
     const soloFrame = this._createButtonRow(BUTTON_ROWS.solo.label, BUTTON_ROWS.solo.notes, "solo");
     const soloKeyCell = document.createElement("div");
@@ -151,8 +159,8 @@ export class LayoutUI {
     cell.innerHTML = `
       <div class="track-label">${label}</div>
       ${swatch ? '<div class="swatch"></div>' : ""}
-      <input type="range" min="0" max="127" value="0" class="cc-slider" orient="horizontal" />
-      <div class="value">0</div>
+      <input type="range" min="${MIDI_CC.min}" max="${MIDI_CC.max}" value="${MIDI_CC.min}" class="cc-slider" orient="horizontal" />
+      <div class="value">${MIDI_CC.min}</div>
     `;
     const slider = cell.querySelector(".cc-slider");
     const valueEl = cell.querySelector(".value");
@@ -166,13 +174,16 @@ export class LayoutUI {
   }
 
   _createFaderCell(label, cc, trackIndex, isMaster = false) {
+    const defaultCc = isMaster
+      ? Math.round((MIDI_CC.min + MIDI_CC.max) / 2)
+      : MIDI_CC.min;
     const cell = document.createElement("div");
     cell.className = "fader-cell";
     cell.innerHTML = `
       <div class="track-label">${label}</div>
-      <input type="range" min="0" max="127" value="${isMaster ? 64 : 0}" class="fader-slider" />
-      <div class="value">${isMaster ? 64 : 0}</div>
-      ${isMaster ? '<div class="meta">Time: 0 – 5.0 s</div>' : ""}
+      <input type="range" min="${MIDI_CC.min}" max="${MIDI_CC.max}" value="${defaultCc}" class="fader-slider" />
+      <div class="value">${defaultCc}</div>
+      ${isMaster ? '<div class="meta"></div>' : ""}
     `;
     const slider = cell.querySelector(".fader-slider");
     const valueEl = cell.querySelector(".value");
@@ -235,6 +246,7 @@ export class LayoutUI {
       this._syncCc(faderCc(ti), track.faderValue);
       this._setButtonLit(this.noteButtons.get(muteNote(ti)), track.muted);
       this._setButtonLit(this.noteButtons.get(soloNote(ti)), track.soloed);
+      this._setButtonLit(this.noteButtons.get(recArmNote(ti)), track.soloed);
     }
     this._syncCc(MASTER_CC, engine.masterCc);
     if (this.masterTimeLabel) {

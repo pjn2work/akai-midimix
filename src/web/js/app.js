@@ -1,7 +1,9 @@
+import { CENTER_FREQUENCY } from "./constants.js";
 import { WaveEngine } from "./wave-engine.js";
 import { CanvasRenderer } from "./canvas-renderer.js";
 import { LayoutUI } from "./layout-ui.js";
 import { MidiIO, checkMidiEnvironment } from "./midi-io.js";
+import { SumAudioPlayer } from "./sum-audio.js";
 
 const engine = new WaveEngine();
 const canvas = document.getElementById("wave-canvas");
@@ -12,6 +14,9 @@ const warningEl = document.getElementById("midi-warning");
 const portSelect = document.getElementById("midi-port");
 const connectBtn = document.getElementById("midi-connect");
 const mirrorCheck = document.getElementById("mirror-leds");
+const playBtn = document.getElementById("play-sum");
+const centerFreqSlider = document.getElementById("center-frequency");
+const centerFreqValue = document.getElementById("center-frequency-value");
 
 function showMidiWarning(message) {
   if (!warningEl) return;
@@ -25,6 +30,15 @@ function showMidiWarning(message) {
 }
 
 const renderer = new CanvasRenderer(canvas);
+const sumAudio = new SumAudioPlayer(engine);
+sumAudio.onStateChange = updatePlayButton;
+
+function updatePlayButton() {
+  if (!playBtn) return;
+  playBtn.disabled = !sumAudio.canPlay;
+  playBtn.textContent = sumAudio.playing ? "■ Stop" : "▶ Play sum";
+}
+
 const midi = new MidiIO(engine, {
   onStatus: (msg) => {
     statusEl.textContent = msg;
@@ -82,6 +96,7 @@ const layout = new LayoutUI(layoutRoot, engine, {
 engine.onChange(() => {
   layout.syncFromEngine();
   scheduleRender();
+  updatePlayButton();
 });
 
 async function refreshPorts() {
@@ -147,4 +162,33 @@ mirrorCheck.addEventListener("change", () => {
 
 document.getElementById("refresh-ports").addEventListener("click", refreshPorts);
 
-refreshPorts().then(() => scheduleRender());
+centerFreqSlider.min = String(CENTER_FREQUENCY.min);
+centerFreqSlider.max = String(CENTER_FREQUENCY.max);
+centerFreqSlider.value = String(CENTER_FREQUENCY.default);
+centerFreqValue.textContent = `${CENTER_FREQUENCY.default} Hz`;
+engine.setCenterFrequency(CENTER_FREQUENCY.default);
+
+centerFreqSlider.addEventListener("input", () => {
+  const hz = parseInt(centerFreqSlider.value, 10);
+  engine.setCenterFrequency(hz);
+  centerFreqValue.textContent = `${hz} Hz`;
+  if (sumAudio.playing) sumAudio.play();
+});
+
+playBtn.addEventListener("click", async () => {
+  if (sumAudio.playing) {
+    sumAudio.stop();
+    return;
+  }
+  try {
+    await sumAudio.play();
+  } catch (err) {
+    statusEl.textContent = `Audio error: ${err.message}`;
+    updatePlayButton();
+  }
+});
+
+refreshPorts().then(() => {
+  scheduleRender();
+  updatePlayButton();
+});

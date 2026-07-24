@@ -46,6 +46,11 @@ BUTTON_ROWS.solo.notes.forEach((note, trackIndex) => {
   NOTE_TO_SOLO.set(note, trackIndex);
 });
 
+const NOTE_TO_REC_ARM = new Map();
+BUTTON_ROWS.recArm.notes.forEach((note, trackIndex) => {
+  NOTE_TO_REC_ARM.set(note, trackIndex);
+});
+
 /** @returns {{ kind: 'knob', rowIndex: number, trackIndex: number } | { kind: 'fader', trackIndex: number } | { kind: 'master' } | null} */
 export function ccControl(cc) {
   if (cc === MASTER_CC) return { kind: "master" };
@@ -56,7 +61,7 @@ export function ccControl(cc) {
   return null;
 }
 
-/** @returns {{ kind: 'mute' | 'solo', trackIndex: number } | { kind: 'bankLeft' | 'bankRight' | 'soloKey' } | null} */
+/** @returns {{ kind: 'mute' | 'solo' | 'recArm', trackIndex: number } | { kind: 'bankLeft' | 'bankRight' | 'soloKey' } | null} */
 export function noteControl(note) {
   if (note === GLOBAL_BUTTONS.bankLeft.note) return { kind: "bankLeft" };
   if (note === GLOBAL_BUTTONS.bankRight.note) return { kind: "bankRight" };
@@ -65,6 +70,8 @@ export function noteControl(note) {
   if (mute !== undefined) return { kind: "mute", trackIndex: mute };
   const solo = NOTE_TO_SOLO.get(note);
   if (solo !== undefined) return { kind: "solo", trackIndex: solo };
+  const recArm = NOTE_TO_REC_ARM.get(note);
+  if (recArm !== undefined) return { kind: "recArm", trackIndex: recArm };
   return null;
 }
 
@@ -82,4 +89,8 @@ export function muteNote(trackIndex) {
 
 export function soloNote(trackIndex) {
   return BUTTON_ROWS.solo.notes[trackIndex];
+}
+
+export function recArmNote(trackIndex) {
+  return BUTTON_ROWS.recArm.notes[trackIndex];
 }

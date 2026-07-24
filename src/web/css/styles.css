@@ -260,6 +260,54 @@ body {
   margin-bottom: 8px;
 }
 
+.canvas-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.play-btn {
+  padding: 6px 14px;
+  background: #1a5c34;
+  color: #eafff0;
+  border: 1px solid rgba(46, 204, 113, 0.45);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.play-btn:hover:not(:disabled) {
+  background: #227a44;
+}
+
+.play-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.center-freq-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.center-freq-control input[type="range"] {
+  width: 140px;
+  accent-color: #00ff00;
+}
+
+.center-freq-control span {
+  min-width: 56px;
+  font-variant-numeric: tabular-nums;
+  color: #9dff9d;
+}
+
 .legend {
   display: flex;
   flex-wrap: wrap;

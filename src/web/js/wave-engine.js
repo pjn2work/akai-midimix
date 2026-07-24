@@ -1,26 +1,27 @@
 import { ccToColor } from "./color.js";
+import {
+  AMPLITUDE,
+  CENTER_FREQUENCY,
+  FREQUENCY,
+  MASTER_TIME,
+  MIDI_CC,
+  PHASE,
+  TIME_STEP,
+} from "./constants.js";
 import { ccControl, noteControl, TRACK_COUNT } from "./midi-map.js";
 
-const TWO_PI = Math.PI * 2;
-
-export const TIME_STEP_DEFAULT = 0.05;
-export const TIME_STEP_MIN = 0.025;
-export const TIME_STEP_MAX = 0.5;
-export const TIME_STEP_DELTA = 0.025;
-export const MASTER_TIME_MAX = 10;
-
 function lerpRange(value, min, max) {
-  return min + (value / 127) * (max - min);
+  return min + ((value - MIDI_CC.min) / (MIDI_CC.max - MIDI_CC.min)) * (max - min);
 }
 
 function createTrack(index) {
   return {
     index,
-    colorCc: 0,
-    color: ccToColor(0),
+    colorCc: MIDI_CC.min,
+    color: ccToColor(MIDI_CC.min),
     frequency: 0,
     phase: 0,
-    amplitude: 0,
+    amplitude: AMPLITUDE.min,
     muted: false,
     soloed: false,
     knobValues: [0, 0, 0],
@@ -31,10 +32,11 @@ function createTrack(index) {
 export class WaveEngine {
   constructor() {
     this.tracks = Array.from({ length: TRACK_COUNT }, (_, i) => createTrack(i));
-    this.masterTime = 5;
-    this.masterCc = 64;
-    this.timeStep = TIME_STEP_DEFAULT;
+    this.masterTime = (MASTER_TIME.min + MASTER_TIME.max) / 2;
+    this.masterCc = Math.round((MIDI_CC.min + MIDI_CC.max) / 2);
+    this.timeStep = TIME_STEP.default;
     this.soloKeyHeld = false;
+    this.centerFrequency = CENTER_FREQUENCY.default;
     this.listeners = new Set();
   }
 
@@ -48,13 +50,13 @@ export class WaveEngine {
   }
 
   ccValue(cc, value) {
-    const clamped = Math.max(0, Math.min(127, value));
+    const clamped = Math.max(MIDI_CC.min, Math.min(MIDI_CC.max, value));
     const control = ccControl(cc);
     if (!control) return false;
 
     if (control.kind === "master") {
       this.masterCc = clamped;
-      this.masterTime = lerpRange(clamped, 0, MASTER_TIME_MAX);
+      this.masterTime = lerpRange(clamped, MASTER_TIME.min, MASTER_TIME.max);
       this.notify();
       return true;
     }
@@ -62,7 +64,9 @@ export class WaveEngine {
     if (control.kind === "fader") {
       const track = this.tracks[control.trackIndex];
       track.faderValue = clamped;
-      track.amplitude = clamped / 127;
+      track.amplitude =
+        AMPLITUDE.min +
+        (clamped / MIDI_CC.max) * (AMPLITUDE.max - AMPLITUDE.min);
       this.notify();
       return true;
     }
@@ -73,9 +77,9 @@ export class WaveEngine {
       track.colorCc = clamped;
       track.color = ccToColor(clamped);
     } else if (control.rowIndex === 1) {
-      track.frequency = lerpRange(clamped, -TWO_PI, TWO_PI);
+      track.frequency = lerpRange(clamped, FREQUENCY.min, FREQUENCY.max);
     } else if (control.rowIndex === 2) {
-      track.phase = lerpRange(clamped, -Math.PI, Math.PI);
+      track.phase = lerpRange(clamped, PHASE.min, PHASE.max);
     }
     this.notify();
     return true;
@@ -97,14 +101,26 @@ export class WaveEngine {
   }
 
   adjustTimeStep(delta) {
-    const next = Math.round((this.timeStep + delta) / TIME_STEP_DELTA) * TIME_STEP_DELTA;
-    this.timeStep = Math.max(TIME_STEP_MIN, Math.min(TIME_STEP_MAX, next));
+    const next = Math.round((this.timeStep + delta) / TIME_STEP.delta) * TIME_STEP.delta;
+    this.timeStep = Math.max(TIME_STEP.min, Math.min(TIME_STEP.max, next));
     this.notify();
   }
 
   setTimeStep(value) {
-    this.timeStep = Math.max(TIME_STEP_MIN, Math.min(TIME_STEP_MAX, value));
+    this.timeStep = Math.max(TIME_STEP.min, Math.min(TIME_STEP.max, value));
     this.notify();
+  }
+
+  setCenterFrequency(hz) {
+    this.centerFrequency = Math.max(
+      CENTER_FREQUENCY.min,
+      Math.min(CENTER_FREQUENCY.max, hz),
+    );
+  }
+
+  /** Audio-only: knob frequency scaled by center freq (|knob| at max ≈ centerFrequency Hz). */
+  trackAudioAngularFrequency(track) {
+    return track.frequency * this.centerFrequency;
   }
 
   /** @returns {boolean[]} */
@@ -121,11 +137,26 @@ export class WaveEngine {
     return track.amplitude * Math.sin(track.frequency * t + track.phase);
   }
 
+  waveAtAudio(trackIndex, t) {
+    const track = this.tracks[trackIndex];
+    const omega = this.trackAudioAngularFrequency(track);
+    return track.amplitude * Math.sin(omega * t + track.phase);
+  }
+
   sumAt(t) {
     const visible = this.visibleTracks();
     let total = 0;
     for (let i = 0; i < TRACK_COUNT; i += 1) {
       if (visible[i]) total += this.waveAt(i, t);
+    }
+    return total;
+  }
+
+  sumAtAudio(t) {
+    const visible = this.visibleTracks();
+    let total = 0;
+    for (let i = 0; i < TRACK_COUNT; i += 1) {
+      if (visible[i]) total += this.waveAtAudio(i, t);
     }
     return total;
   }
@@ -165,12 +196,12 @@ export class WaveEngine {
     }
 
     if (control.kind === "bankLeft") {
-      if (active) this.adjustTimeStep(-TIME_STEP_DELTA);
+      if (active) this.adjustTimeStep(-TIME_STEP.delta);
       return { control, toggled: active };
     }
 
     if (control.kind === "bankRight") {
-      if (active) this.adjustTimeStep(TIME_STEP_DELTA);
+      if (active) this.adjustTimeStep(TIME_STEP.delta);
       return { control, toggled: active };
     }
 
@@ -181,6 +212,11 @@ export class WaveEngine {
 
     if (control.kind === "solo" && active) {
       if (requireSoloKey && !this.soloKeyHeld) return { control, toggled: false };
+      this.toggleTrackButton("solo", control.trackIndex);
+      return { control, toggled: true };
+    }
+
+    if (control.kind === "recArm" && active) {
       this.toggleTrackButton("solo", control.trackIndex);
       return { control, toggled: true };
     }

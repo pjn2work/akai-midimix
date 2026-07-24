@@ -1,13 +1,15 @@
-/** Map knob CC 0–127 to bright RGB colors (no wrap, no green — reserved for sum wave). */
+/** Map knob CC to bright RGB colors (no wrap, no green — reserved for sum wave). */
+
+import { COLOR_KNOB } from "./constants.js";
 
 const COLOR_STOPS = [
-  { cc: 0, rgb: [255, 0, 0] },
+  { cc: COLOR_KNOB.ccMin, rgb: [255, 0, 0] },
   { cc: 25, rgb: [255, 128, 0] },
   { cc: 42, rgb: [255, 255, 0] },
   { cc: 64, rgb: [255, 255, 255] },
   { cc: 85, rgb: [0, 255, 255] },
   { cc: 106, rgb: [0, 0, 255] },
-  { cc: 127, rgb: [255, 0, 255] },
+  { cc: COLOR_KNOB.ccMax, rgb: [255, 0, 255] },
 ];
 
 const SUM_GREEN = [0, 255, 0];
@@ -85,12 +87,8 @@ function avoidGreen(rgb) {
   return rgb;
 }
 
-/**
- * @param {number} cc 0–127
- * @returns {{ r: number, g: number, b: number, hex: string }}
- */
 export function ccToColor(cc) {
-  const value = Math.max(0, Math.min(127, cc));
+  const value = Math.max(COLOR_KNOB.ccMin, Math.min(COLOR_KNOB.ccMax, cc));
   let lower = COLOR_STOPS[0];
   let upper = COLOR_STOPS[COLOR_STOPS.length - 1];
   for (let i = 0; i < COLOR_STOPS.length - 1; i += 1) {

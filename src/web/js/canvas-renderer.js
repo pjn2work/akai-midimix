@@ -1,5 +1,8 @@
+import { PLOT } from "./constants.js";
 import { SUM_WAVE_COLOR } from "./color.js";
 import { TRACK_COUNT } from "./midi-map.js";
+
+const Y_AXIS_LIMIT = PLOT.yAxisLimit;
 
 export class CanvasRenderer {
   /** @param {HTMLCanvasElement} canvas */
@@ -44,30 +47,15 @@ export class CanvasRenderer {
     }
 
     const visible = engine.visibleTracks();
-    let yMin = 0;
-    let yMax = 0;
-    for (const p of points) {
-      yMin = Math.min(yMin, p.sum);
-      yMax = Math.max(yMax, p.sum);
-      for (let i = 0; i < TRACK_COUNT; i += 1) {
-        if (visible[i] && p.waves[i] != null) {
-          yMin = Math.min(yMin, p.waves[i]);
-          yMax = Math.max(yMax, p.waves[i]);
-        }
-      }
-    }
-    const yPad = Math.max(0.15, (yMax - yMin) * 0.08);
-    yMin -= yPad;
-    yMax += yPad;
-    if (yMin === yMax) {
-      yMin -= 1;
-      yMax += 1;
-    }
+    const yMin = -Y_AXIS_LIMIT;
+    const yMax = Y_AXIS_LIMIT;
+    const plotCenterY = pad.top + plotH / 2;
+    const halfPlot = plotH / 2;
 
     const xScale = (t) => pad.left + (t / engine.masterTime) * plotW;
-    const yScale = (v) => pad.top + plotH - ((v - yMin) / (yMax - yMin)) * plotH;
+    const yScale = (v) => plotCenterY - (v / Y_AXIS_LIMIT) * halfPlot;
 
-    this.drawGrid(ctx, pad, plotW, plotH, engine.masterTime, yMin, yMax, xScale, yScale);
+    this.drawGrid(ctx, pad, plotW, plotH, engine.masterTime, yMin, yMax, xScale, yScale, plotCenterY);
 
     for (let ti = 0; ti < TRACK_COUNT; ti += 1) {
       if (!visible[ti]) continue;
@@ -84,20 +72,31 @@ export class CanvasRenderer {
     ctx.fillText(`Σ sum`, pad.left, pad.top - 8);
   }
 
-  drawGrid(ctx, pad, plotW, plotH, masterTime, yMin, yMax, xScale, yScale) {
+  drawGrid(ctx, pad, plotW, plotH, masterTime, yMin, yMax, xScale, yScale, plotCenterY) {
     ctx.strokeStyle = "rgba(255,255,255,0.08)";
     ctx.lineWidth = 1;
-    const zeroY = yScale(0);
-    if (zeroY >= pad.top && zeroY <= pad.top + plotH) {
+
+    for (let v = -Y_AXIS_LIMIT; v <= Y_AXIS_LIMIT; v += 1) {
+      if (v === 0) continue;
+      const y = yScale(v);
       ctx.beginPath();
-      ctx.moveTo(pad.left, zeroY);
-      ctx.lineTo(pad.left + plotW, zeroY);
+      ctx.moveTo(pad.left, y);
+      ctx.lineTo(pad.left + plotW, y);
       ctx.stroke();
     }
+
+    ctx.strokeStyle = "rgba(255,255,255,0.28)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, plotCenterY);
+    ctx.lineTo(pad.left + plotW, plotCenterY);
+    ctx.stroke();
+
     ctx.fillStyle = "rgba(255,255,255,0.45)";
     ctx.font = "10px system-ui, sans-serif";
-    ctx.fillText(yMax.toFixed(2), 4, pad.top + 10);
-    ctx.fillText(yMin.toFixed(2), 4, pad.top + plotH);
+    ctx.fillText(String(yMax), 4, pad.top + 10);
+    ctx.fillText("0", 4, plotCenterY + 4);
+    ctx.fillText(String(yMin), 4, pad.top + plotH);
   }
 
   drawSeries(ctx, points, accessor, color, lineWidth, xScale, yScale) {

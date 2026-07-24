@@ -3,8 +3,7 @@ import {
   noteControl,
   muteNote,
   soloNote,
-  GLOBAL_BUTTONS,
-  BUTTON_ROWS,
+  recArmNote,
 } from "./midi-map.js";
 
 function noteIsActive(data, type) {
@@ -157,13 +156,19 @@ export class MidiIO {
     }
   }
 
+  _syncSoloLedsForTrack(trackIndex) {
+    const soloed = this.engine.tracks[trackIndex].soloed;
+    this.sendLed(soloNote(trackIndex), soloed);
+    this.sendLed(recArmNote(trackIndex), soloed);
+  }
+
   _syncLedForNote(note) {
     const control = noteControl(note);
     if (!control) return;
     if (control.kind === "mute") {
       this.sendLed(note, this.engine.tracks[control.trackIndex].muted);
-    } else if (control.kind === "solo") {
-      this.sendLed(note, this.engine.tracks[control.trackIndex].soloed);
+    } else if (control.kind === "solo" || control.kind === "recArm") {
+      this._syncSoloLedsForTrack(control.trackIndex);
     }
   }
 
@@ -184,7 +189,7 @@ export class MidiIO {
     if (!this.output) return;
     for (let i = 0; i < 8; i += 1) {
       this.sendLed(muteNote(i), this.engine.tracks[i].muted);
-      this.sendLed(soloNote(i), this.engine.tracks[i].soloed);
+      this._syncSoloLedsForTrack(i);
     }
   }
 

@@ -32,7 +32,15 @@
       <section class="panel canvas-panel">
         <div class="canvas-header">
           <h2>Waves</h2>
-          <div id="legend" class="legend"></div>
+          <div class="canvas-toolbar">
+            <button type="button" id="play-sum" class="play-btn" disabled>▶ Play sum</button>
+            <label class="center-freq-control">
+              Center freq
+              <input type="range" id="center-frequency" step="1" />
+              <span id="center-frequency-value"></span>
+            </label>
+            <div id="legend" class="legend"></div>
+          </div>
         </div>
         <div class="canvas-wrap">
           <canvas id="wave-canvas"></canvas>
