@@ -1,16 +1,28 @@
 import { WaveEngine } from "./wave-engine.js";
 import { CanvasRenderer } from "./canvas-renderer.js";
 import { LayoutUI } from "./layout-ui.js";
-import { MidiIO } from "./midi-io.js";
+import { MidiIO, checkMidiEnvironment } from "./midi-io.js";
 
 const engine = new WaveEngine();
 const canvas = document.getElementById("wave-canvas");
 const layoutRoot = document.getElementById("layout-root");
 const legendRoot = document.getElementById("legend");
 const statusEl = document.getElementById("status");
+const warningEl = document.getElementById("midi-warning");
 const portSelect = document.getElementById("midi-port");
 const connectBtn = document.getElementById("midi-connect");
 const mirrorCheck = document.getElementById("mirror-leds");
+
+function showMidiWarning(message) {
+  if (!warningEl) return;
+  if (message) {
+    warningEl.hidden = false;
+    warningEl.textContent = message;
+  } else {
+    warningEl.hidden = true;
+    warningEl.textContent = "";
+  }
+}
 
 const renderer = new CanvasRenderer(canvas);
 const midi = new MidiIO(engine, {
@@ -20,6 +32,7 @@ const midi = new MidiIO(engine, {
   onStateChange: () => {
     connectBtn.textContent = midi.connected ? "Disconnect" : "Connect";
     portSelect.disabled = midi.connected;
+    if (!midi.connected) refreshPorts();
   },
 });
 
@@ -72,18 +85,30 @@ engine.onChange(() => {
 });
 
 async function refreshPorts() {
-  if (!midi.supported) {
-    statusEl.textContent = "Web MIDI not supported — use Chrome or Edge.";
+  const env = checkMidiEnvironment();
+  if (!env.ok) {
+    showMidiWarning(env.hint ?? env.reason);
+    statusEl.textContent = env.reason ?? "Web MIDI unavailable";
     connectBtn.disabled = true;
+    portSelect.innerHTML = "";
+    const opt = document.createElement("option");
+    opt.textContent = "MIDI unavailable";
+    portSelect.appendChild(opt);
     return;
   }
+
+  showMidiWarning(null);
+  connectBtn.disabled = false;
+
   try {
     const { inputs } = await midi.listPorts();
     portSelect.innerHTML = "";
     if (inputs.length === 0) {
       const opt = document.createElement("option");
-      opt.textContent = "No MIDI inputs found";
+      opt.textContent = "No MIDI inputs on this device";
       portSelect.appendChild(opt);
+      statusEl.textContent =
+        "No MIDI inputs found on this computer. Plug in the MIDIMIX here (MIDI is local to the browser machine).";
       return;
     }
     inputs.forEach((name) => {
@@ -94,8 +119,11 @@ async function refreshPorts() {
     });
     const preferred = inputs.find((n) => /midimix|midi mix/i.test(n)) ?? inputs[0];
     portSelect.value = preferred;
+    statusEl.textContent = `${inputs.length} MIDI input(s) on this computer`;
   } catch (err) {
+    showMidiWarning("Try http://localhost:3000 on the machine with the MIDIMIX, or use HTTPS.");
     statusEl.textContent = `MIDI error: ${err.message}`;
+    connectBtn.disabled = true;
   }
 }
 

@@ -33,6 +33,28 @@ function matchingOutputPort(inputName, access) {
   return defaultMidimixPort(access, "output");
 }
 
+/** @returns {{ ok: boolean, reason?: string, hint?: string }} */
+export function checkMidiEnvironment() {
+  if (typeof navigator.requestMIDIAccess !== "function") {
+    return {
+      ok: false,
+      reason: "Web MIDI is not supported in this browser.",
+      hint: "Use Chrome or Edge on the computer that has the MIDIMIX plugged in.",
+    };
+  }
+  if (!window.isSecureContext) {
+    const origin = window.location.origin;
+    return {
+      ok: false,
+      reason: `Web MIDI is blocked on ${origin} (not a secure context).`,
+      hint:
+        "Open http://localhost:3000 on the machine with the MIDIMIX, or serve this app over HTTPS. "
+        + "LAN HTTP URLs like http://192.168.x.x are not allowed for MIDI.",
+    };
+  }
+  return { ok: true };
+}
+
 export class MidiIO {
   /**
    * @param {import('./wave-engine.js').WaveEngine} engine
@@ -59,8 +81,14 @@ export class MidiIO {
   }
 
   async listPorts() {
-    if (!this.supported) return { inputs: [], outputs: [] };
+    const env = checkMidiEnvironment();
+    if (!env.ok) throw new Error(env.reason);
+
     this.access = await navigator.requestMIDIAccess({ sysex: false });
+    this.access.onstatechange = () => {
+      this.onStateChange();
+    };
+
     return {
       inputs: [...this.access.inputs.values()].map((p) => p.name),
       outputs: [...this.access.outputs.values()].map((p) => p.name),
@@ -68,7 +96,8 @@ export class MidiIO {
   }
 
   async connect(inputName) {
-    if (!this.supported) throw new Error("Web MIDI API is not available in this browser.");
+    const env = checkMidiEnvironment();
+    if (!env.ok) throw new Error(env.reason);
     if (!this.access) await this.listPorts();
 
     this.disconnect();

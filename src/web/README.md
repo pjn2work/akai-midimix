@@ -12,7 +12,7 @@ Web app to configure and visualize 8 sine waves using an **Akai MIDIMIX** contro
 
 ## Run
 
-Serve this folder over HTTP (required for Web MIDI on some setups):
+Serve this folder over HTTP and open it **on the same computer that has the MIDIMIX plugged in**:
 
 ```bash
 cd src/web
@@ -20,7 +20,11 @@ npx --yes serve .
 # or: python3 -m http.server 8080
 ```
 
-Open `http://localhost:3000` (or `:8080`), select your MIDIMIX input, click **Connect**.
+Open **`http://localhost:3000`** (not a LAN IP like `http://192.168.x.x`). The browser Web MIDI API only works in a [secure context](https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts): `localhost`, `127.0.0.1`, or HTTPS. Python/mido has no such restriction, which is why the debugger worked over any setup.
+
+MIDI ports are also **local to the browser machine** — opening the app on a phone or another PC will list that device's MIDI ports, not your Mac's MIDIMIX.
+
+Select your MIDIMIX input and click **Connect**.
 
 ## Controls
 
