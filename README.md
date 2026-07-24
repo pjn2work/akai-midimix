@@ -1,54 +1,39 @@
-# MIDIMIX Debugger
+# akai-midimix
 
-Small Python GUI to visualize **Akai MIDIMIX** knobs, faders, and buttons and see the exact MIDI values they send.
+Tools for the **Akai MIDIMIX** controller using the factory-default MIDI map.
 
 <img src="img/akai_midimix.png" width="300" alt="Akai MIDIMIX" style="box-shadow: 8px 8px 16px rgba(30,0,20,0.4); border-radius: 10px;"/>
 
+## Source code
 
-## Project layout
+All application code lives under [`src/`](src/):
 
-| File | Role |
-|------|------|
-| `midimix_factory.py` | Factory CC/note map, `MidimixFactory` class (MIDI in/out, LED commands, state) |
-| `midimix_debugger.py` | Tkinter GUI |
+| Folder | Description |
+|--------|-------------|
+| [`src/python/`](src/python/) | Tkinter MIDI debugger — visualize CC/note values and test LEDs |
+| [`src/web/`](src/web/) | Wave visualizer — configure 8 sine waves from knobs/faders and plot them |
 
-## Setup
+## Python debugger
 
 ```bash
-cd ~/Projects/midimix-debugger
+cd src/python
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-```
-
-## Run
-
-```bash
 python midimix_debugger.py
 ```
 
-1. Choose your MIDIMIX input port (often named like `Akai MIDIMIX`).
-2. Click **Connect**.
-3. Move controls — values update on the **MIDIMIX layout** tab; every message appears on **Raw MIDI log**.
+See [`src/python/README.md`](src/python/README.md) for screenshots and LED setup.
 
-The layout tab uses the **factory default** CC/note map. If you customized the unit with Akai’s editor, rely on the raw log for the numbers you actually receive.
+## Web wave visualizer
 
-![MIDIMIX layout](img/layout.png)
+```bash
+cd src/web
+npx --yes serve .
+```
 
-![Raw MIDI log](img/logs.png)
+See [`src/web/README.md`](src/web/README.md) for control mapping and setup (Web MIDI, External LED mode).
 
-## LED test
+## License
 
-On the **LED test** tab:
-
-1. In **Akai MIDIMIX Editor**, set button **LED mode** to **External** and send that config to the device.
-2. Select the MIDIMIX **MIDI output** port and click **Open output**.
-3. Use **On** / **Off** / toggle per note, or **All LEDs on/off**.
-
-When you **Connect** on the main toolbar, the app opens the matching MIDI **output** automatically (if **Mirror button LEDs** is checked) and toggles each button LED on every press.
-
-To load current knob/fader positions into the app, press **SEND ALL** on the MIDIMIX (the hardware does not expose a reliable software equivalent).
-
-LEDs are driven with **Note On** (velocity 127 = on, 0 = off) on the factory default note numbers. The Solo key often has no LED; bank arrows use a paired binary indicator on the hardware.
-
-![LED test](img/leds.png)
+Apache 2.0 — see [LICENSE](LICENSE).

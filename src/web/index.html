@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MIDIMIX Wave Visualizer</title>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>MIDIMIX Wave Visualizer</h1>
+      <p id="midi-warning" class="midi-warning" hidden></p>
+      <div class="midi-bar">
+        <label for="midi-port">MIDI input</label>
+        <select id="midi-port"></select>
+        <button type="button" id="refresh-ports">Refresh</button>
+        <button type="button" id="midi-connect">Connect</button>
+        <label class="checkbox-label">
+          <input type="checkbox" id="mirror-leds" checked />
+          Mirror button LEDs
+        </label>
+        <span id="status" class="status">Disconnected</span>
+      </div>
+    </header>
+
+    <main class="app-main">
+      <section class="panel layout-panel">
+        <h2>Controller</h2>
+        <div id="layout-root"></div>
+      </section>
+
+      <section class="panel canvas-panel time-panel">
+        <div class="canvas-header">
+          <h2>Time</h2>
+          <div class="canvas-toolbar">
+            <button type="button" id="play-sum" class="play-btn" disabled>▶ Play sum</button>
+            <label class="center-freq-control">
+              Center freq
+              <input type="range" id="center-frequency" step="1" />
+              <span id="center-frequency-value"></span>
+            </label>
+            <div id="legend" class="legend"></div>
+          </div>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="wave-canvas"></canvas>
+        </div>
+      </section>
+
+      <section class="panel canvas-panel polar-panel">
+        <div class="canvas-header">
+          <h2>Polar</h2>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="polar-canvas"></canvas>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>
