@@ -49,11 +49,12 @@ CC/note layout matches `src/python/midimix_factory.py` (see `js/midi-map.js`).
 
 | File | Role |
 |------|------|
-| `js/constants.js` | **Tunable min/max** — amplitude, frequency, phase, time, center freq, plot |
+| `js/constants.js` | **Tunable min/max** — amplitude, frequency, phase, time, center freq, plot, polar |
 | `js/midi-map.js` | Factory CC/note constants |
 | `js/color.js` | Knob → RGB (no green, no red wrap) |
 | `js/wave-engine.js` | State, math, mute/solo |
-| `js/canvas-renderer.js` | Canvas plotting |
+| `js/canvas-renderer.js` | Time-domain canvas plotting |
+| `js/polar-renderer.js` | Polar vector sum + shape path |
 | `js/layout-ui.js` | Controller mirror + mouse |
 | `js/midi-io.js` | Web MIDI in/out, LED mirror |
 | `js/app.js` | Wiring |

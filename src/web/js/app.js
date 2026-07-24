@@ -1,5 +1,6 @@
 import { CENTER_FREQUENCY } from "./constants.js";
 import { WaveEngine } from "./wave-engine.js";
+import { PolarRenderer } from "./polar-renderer.js";
 import { CanvasRenderer } from "./canvas-renderer.js";
 import { LayoutUI } from "./layout-ui.js";
 import { MidiIO, checkMidiEnvironment } from "./midi-io.js";
@@ -7,6 +8,7 @@ import { SumAudioPlayer } from "./sum-audio.js";
 
 const engine = new WaveEngine();
 const canvas = document.getElementById("wave-canvas");
+const polarCanvas = document.getElementById("polar-canvas");
 const layoutRoot = document.getElementById("layout-root");
 const legendRoot = document.getElementById("legend");
 const statusEl = document.getElementById("status");
@@ -30,6 +32,7 @@ function showMidiWarning(message) {
 }
 
 const renderer = new CanvasRenderer(canvas);
+const polarRenderer = new PolarRenderer(polarCanvas);
 const sumAudio = new SumAudioPlayer(engine);
 sumAudio.onStateChange = updatePlayButton;
 
@@ -56,8 +59,14 @@ function scheduleRender() {
   renderScheduled = true;
   requestAnimationFrame(() => {
     renderScheduled = false;
-    renderer.render(engine);
-    updateLegend();
+    try {
+      renderer.render(engine);
+      polarRenderer.render(engine);
+      updateLegend();
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = `Render error: ${err.message}`;
+    }
   });
 }
 

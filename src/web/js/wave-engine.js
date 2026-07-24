@@ -161,6 +161,57 @@ export class WaveEngine {
     return total;
   }
 
+  /** Phasor components for one track at time t (Cartesian / polar plot). */
+  trackVectorAt(trackIndex, t) {
+    const track = this.tracks[trackIndex];
+    const angle = track.frequency * t + track.phase;
+    return {
+      x: track.amplitude * Math.cos(angle),
+      y: track.amplitude * Math.sin(angle),
+    };
+  }
+
+  /**
+   * Head-to-tail vector chain for visible tracks at time t.
+   * @returns {{ segments: { x0: number, y0: number, x1: number, y1: number, color: string }[], tip: { x: number, y: number } }}
+   */
+  polarChainAt(t) {
+    const visible = this.visibleTracks();
+    let x = 0;
+    let y = 0;
+    const segments = [];
+    for (let i = 0; i < TRACK_COUNT; i += 1) {
+      if (!visible[i]) continue;
+      const { x: dx, y: dy } = this.trackVectorAt(i, t);
+      segments.push({
+        x0: x,
+        y0: y,
+        x1: x + dx,
+        y1: y + dy,
+        color: this.tracks[i].color.hex,
+      });
+      x += dx;
+      y += dy;
+    }
+    return { segments, tip: { x, y } };
+  }
+
+  /** Sample polar chains over [0, masterTime] using the same step as the time plot. */
+  samplePolarSeries() {
+    const end = this.masterTime;
+    const step = this.timeStep;
+    if (end <= 0) {
+      return [{ t: 0, ...this.polarChainAt(0) }];
+    }
+    const samples = [];
+    for (let t = 0; t <= end + step * 0.001; t += step) {
+      const sampleT = Math.min(t, end);
+      samples.push({ t: sampleT, ...this.polarChainAt(sampleT) });
+      if (sampleT >= end) break;
+    }
+    return samples;
+  }
+
   /** Sample visible waves and sum over [0, masterTime]. */
   sampleSeries() {
     const visible = this.visibleTracks();

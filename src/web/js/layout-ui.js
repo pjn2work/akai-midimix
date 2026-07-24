@@ -1,4 +1,4 @@
-import { MIDI_CC, TIME_STEP } from "./constants.js";
+import { MIDI_CC, TIME_STEP, FREQUENCY, PHASE } from "./constants.js";
 import {
   GLOBAL_BUTTONS,
   KNOB_ROWS,
@@ -12,6 +12,32 @@ import {
   soloNote,
   recArmNote,
 } from "./midi-map.js";
+
+const TWO_PI = Math.PI * 2;
+
+function lerpFromCc(cc, min, max) {
+  return min + ((cc - MIDI_CC.min) / (MIDI_CC.max - MIDI_CC.min)) * (max - min);
+}
+
+/** Row 2: 1.00 Hz = 2π rad/s (CC maps −6π … 6π). */
+function formatFrequencyDisplay(cc) {
+  const rad = lerpFromCc(cc, FREQUENCY.min, FREQUENCY.max);
+  return `${(rad / TWO_PI).toFixed(2)} Hz`;
+}
+
+/** Row 3: phase in degrees (−π … π → −180° … 180°). */
+function formatPhaseDisplay(cc) {
+  const rad = lerpFromCc(cc, PHASE.min, PHASE.max);
+  const deg = Math.round((rad * 180) / Math.PI);
+  return `${deg}°`;
+}
+
+function formatKnobValueHtml(rowIndex, cc) {
+  const raw = `<span class="cc-raw">(${cc})</span>`;
+  if (rowIndex === 1) return `${formatFrequencyDisplay(cc)} ${raw}`;
+  if (rowIndex === 2) return `${formatPhaseDisplay(cc)} ${raw}`;
+  return String(cc);
+}
 
 export class LayoutUI {
   /**
@@ -166,10 +192,14 @@ export class LayoutUI {
     const valueEl = cell.querySelector(".value");
     slider.addEventListener("input", () => {
       const value = parseInt(slider.value, 10);
-      valueEl.textContent = String(value);
+      if (rowIndex === 1 || rowIndex === 2) {
+        valueEl.innerHTML = formatKnobValueHtml(rowIndex, value);
+      } else {
+        valueEl.textContent = String(value);
+      }
       this.handlers.onCcChange?.(cc, value);
     });
-    this.ccSliders.set(cc, { slider, valueEl, swatch: cell.querySelector(".swatch") });
+    this.ccSliders.set(cc, { slider, valueEl, swatch: cell.querySelector(".swatch"), rowIndex });
     return cell;
   }
 
@@ -265,7 +295,11 @@ export class LayoutUI {
     const widgets = this.ccSliders.get(cc);
     if (!widgets) return;
     widgets.slider.value = String(value);
-    widgets.valueEl.textContent = String(value);
+    if (widgets.rowIndex === 1 || widgets.rowIndex === 2) {
+      widgets.valueEl.innerHTML = formatKnobValueHtml(widgets.rowIndex, value);
+    } else {
+      widgets.valueEl.textContent = String(value);
+    }
     if (widgets.swatch && swatchColor) widgets.swatch.style.background = swatchColor;
     if (widgets.meta && cc === MASTER_CC) {
       widgets.meta.textContent = `Time: 0 – ${this.engine.masterTime.toFixed(1)} s`;

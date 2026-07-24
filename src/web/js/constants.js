@@ -19,29 +19,29 @@ export const AMPLITUDE = {
 
 /** Knob row 2 → angular frequency in rad/s (visual plot). */
 export const FREQUENCY = {
-  min: -Math.PI * 2,
-  max: Math.PI * 2,
+  min: -Math.PI * 10,
+  max: Math.PI * 10,
 };
 
 /** Knob row 3 → starting phase in radians. */
 export const PHASE = {
-  min: -Math.PI,
-  max: Math.PI,
+  min: 0,
+  max: Math.PI * 2,
 };
 
 /** Master fader → plot/audio window length in seconds. */
 export const MASTER_TIME = {
   min: 0,
-  max: 20,
+  max: 5,
 };
 
 /** Sample step Δt for drawing wave lines (seconds per point). */
 export const TIME_STEP = {
-  default: 0.05,
-  min: 0.01,
-  max: 0.5,
-  delta: 0.01,
-  sliderStep: 0.01,
+  default: 0.015,
+  min: 0.005,
+  max: 0.1,
+  delta: 0.005,
+  sliderStep: 0.005,
 };
 
 /**
@@ -54,9 +54,14 @@ export const CENTER_FREQUENCY = {
   default: 440,
 };
 
-/** Fixed Y-axis for the canvas: ±yAxisLimit with 0 centered. */
+/** Fixed Y-axis for the time canvas: ±yAxisLimit with 0 centered. */
 export const PLOT = {
-  yAxisLimit: TRACK_COUNT,
+  yAxisLimit: 5,
+};
+
+/** Fixed radius for the polar canvas (vector sum scale). */
+export const POLAR = {
+  yAxisLimit: 3,
 };
 
 /** Knob row 1 color mapping input range. */

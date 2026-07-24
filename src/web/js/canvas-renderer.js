@@ -1,6 +1,7 @@
 import { PLOT } from "./constants.js";
 import { SUM_WAVE_COLOR } from "./color.js";
 import { TRACK_COUNT } from "./midi-map.js";
+import { setupCanvasResize } from "./canvas-utils.js";
 
 const Y_AXIS_LIMIT = PLOT.yAxisLimit;
 
@@ -9,30 +10,25 @@ export class CanvasRenderer {
   constructor(canvas) {
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
-    this.resizeObserver = new ResizeObserver(() => this.resize());
-    this.resizeObserver.observe(canvas.parentElement ?? canvas);
-    this.resize();
-  }
-
-  resize() {
-    const parent = this.canvas.parentElement;
-    const width = parent?.clientWidth ?? 640;
-    const height = parent?.clientHeight ?? 400;
-    const dpr = window.devicePixelRatio || 1;
-    this.canvas.width = Math.floor(width * dpr);
-    this.canvas.height = Math.floor(height * dpr);
-    this.canvas.style.width = `${width}px`;
-    this.canvas.style.height = `${height}px`;
-    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    this.displayWidth = width;
-    this.displayHeight = height;
+    this.displayWidth = 0;
+    this.displayHeight = 0;
+    this.engine = null;
+    setupCanvasResize(canvas, (width, height, ctx) => {
+      this.displayWidth = width;
+      this.displayHeight = height;
+      this.ctx = ctx;
+      if (this.engine) this.render(this.engine);
+    });
   }
 
   /** @param {import('./wave-engine.js').WaveEngine} engine */
   render(engine) {
+    this.engine = engine;
     const ctx = this.ctx;
     const w = this.displayWidth;
     const h = this.displayHeight;
+    if (w < 2 || h < 2) return;
+
     const pad = { top: 24, right: 16, bottom: 36, left: 48 };
     const plotW = w - pad.left - pad.right;
     const plotH = h - pad.top - pad.bottom;
@@ -55,7 +51,7 @@ export class CanvasRenderer {
     const xScale = (t) => pad.left + (t / engine.masterTime) * plotW;
     const yScale = (v) => plotCenterY - (v / Y_AXIS_LIMIT) * halfPlot;
 
-    this.drawGrid(ctx, pad, plotW, plotH, engine.masterTime, yMin, yMax, xScale, yScale, plotCenterY);
+    this.drawGrid(ctx, pad, plotW, plotH, yMin, yMax, yScale, plotCenterY);
 
     for (let ti = 0; ti < TRACK_COUNT; ti += 1) {
       if (!visible[ti]) continue;
@@ -72,7 +68,7 @@ export class CanvasRenderer {
     ctx.fillText(`Σ sum`, pad.left, pad.top - 8);
   }
 
-  drawGrid(ctx, pad, plotW, plotH, masterTime, yMin, yMax, xScale, yScale, plotCenterY) {
+  drawGrid(ctx, pad, plotW, plotH, yMin, yMax, yScale, plotCenterY) {
     ctx.strokeStyle = "rgba(255,255,255,0.08)";
     ctx.lineWidth = 1;
 
@@ -86,7 +82,6 @@ export class CanvasRenderer {
     }
 
     ctx.strokeStyle = "rgba(255,255,255,0.28)";
-    ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(pad.left, plotCenterY);
     ctx.lineTo(pad.left + plotW, plotCenterY);
